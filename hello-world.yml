@@ -1,5 +1,6 @@
 ---
 - name: Test
+  connection: local
   hosts: 192.168.64.57
   tasks:    
     - name: Run query to get /var size
