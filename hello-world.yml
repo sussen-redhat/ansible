@@ -1,6 +1,23 @@
-- name: Hello World Sample
-  hosts: all
-  tasks:
-    - name: Hello Message
+---
+- name: Test
+  hosts: 192.168.64.57
+  tasks:    
+    - name: Run query to get /var size
+      shell: df -h /var/
+      register: disk_usage
+     # become: true
+
+
+    - name: Run query to get /var/lib size
+      shell: df -h /var/lib/
+      register: disk_usage
+     # become: true
+
+    - name: Run query to get var lib awx size
+      shell: df -h /var/lib/awx/
+      register: disk_usage
+     # become: true
+      
+    - name: Show disk space
       debug:
-        msg: "Hello World!"
+        msg: "/var/lib/awx diskspace is: {{ disk_usage }}"
