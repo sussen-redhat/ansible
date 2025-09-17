@@ -1,7 +1,9 @@
    - name: Delete /tmp/test directory and all its contents
-     ansible.builtin.file:
-       path: /tmp/test
-       state: absent
-     delegate_to: localhost
-     connection: local
-     run_once: true
+     hosts: localhost
+     ansible_connection: local
+     tasks:
+       - name: Delete /tmp/test directory and all its contents
+         ansible.builtin.file:
+           path: /tmp/test
+           state: absent
+         run_once: true
