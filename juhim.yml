@@ -1,6 +1,7 @@
    - name: Delete /tmp/test directory and all its contents
      hosts: localhost
      ansible_connection: local
+     become: true
      tasks:
        - name: Delete /tmp/test directory and all its contents
          ansible.builtin.file:
