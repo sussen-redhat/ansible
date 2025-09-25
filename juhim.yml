@@ -1,10 +1,21 @@
-   - name: Delete /tmp/test directory and all its contents
-     hosts: localhost
-     ansible_connection: local
-     become: true
-     tasks:
-       - name: Delete /tmp/test directory and all its contents
-         ansible.builtin.file:
-           path: /tmp/test
-           state: absent
-         run_once: true
+---
+- name: Cleanup directory contents
+  hosts: localhost
+  become: yes
+  vars:
+    target_dir: "/tmp/test"
+
+  tasks:
+    - name: Find all items under target directory
+      ansible.builtin.find:
+        paths: "{{ target_dir }}"
+        # We don’t want to include the directory itself
+        recurse: yes
+      register: found_items
+
+    - name: Remove all found items (files & directories)
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ found_items.files + found_items.directories | default([]) }}"
+      when: found_items is defined
