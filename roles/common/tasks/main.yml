@@ -1,0 +1,11 @@
+---
+- name: Ensure NTP is installed and running
+  package:
+    name: chrony
+    state: present
+
+- name: Start and enable chronyd
+  service:
+    name: chronyd
+    state: started
+    enabled: true
