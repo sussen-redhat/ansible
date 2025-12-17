@@ -1,0 +1,12 @@
+---
+- name: Deploy app files
+  copy:
+    src: files/app/
+    dest: /opt/myapp/
+    owner: myapp
+    group: myapp
+
+- name: Restart app
+  systemd:
+    name: myapp
+    state: restarted
