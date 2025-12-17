@@ -1,0 +1,14 @@
+---
+- name: Main playbook
+  hosts: all
+  gather_facts: yes
+
+  tasks:
+
+    - name: Include common role
+      include_role:
+        name: common
+
+    - name: Include application deploy role
+      include_role:
+        name: app_deploy
