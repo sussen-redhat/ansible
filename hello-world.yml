@@ -2,5 +2,4 @@
   hosts: all
   tasks:
     - name: Hello Message
-      debug:
-        msg: "{{ msg }}"
+      command: 'sudo awx-manage gather_analytics --ship'
