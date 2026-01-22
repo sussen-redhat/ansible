@@ -8,5 +8,4 @@
       ansible.builtin.command:
         cmd: awx-manage gather_analytics --ship
       become: yes # May require privilege escalation if the default user lacks permissions
-      args:
-        chdir: /var/lib/awx/
+
