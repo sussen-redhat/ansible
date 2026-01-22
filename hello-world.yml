@@ -1,5 +1,12 @@
-- name: Hello World Sample
-  hosts: all
+---
+- name: Gather and Ship AWX Analytics
+  hosts: localhost
+  connection: local
+  gather_facts: false
   tasks:
-    - name: Hello Message
-      command: awx-manage gather_analytics --ship
+    - name: Run awx-manage command
+      ansible.builtin.command:
+        cmd: awx-manage gather_analytics --ship
+      become: yes # May require privilege escalation if the default user lacks permissions
+      args:
+        chdir: /var/lib/awx/
