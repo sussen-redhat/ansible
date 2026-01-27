@@ -11,7 +11,7 @@
     - name: Run gather_analytics inside the AWX task container
       shell: |
         {% if deployment_type == 'podman' %}
-        kubectl exec -n {{ namespace }} deployment/awx-task -c awx-task -- awx-manage gather_analytics --ship
+        podman exec -n {{ namespace }} deployment/awx-task -c awx-task -- awx-manage gather_analytics --ship
         {% else %}
         {{ deployment_type }} exec awx_task awx-manage gather_analytics --ship
         {% endif %}
