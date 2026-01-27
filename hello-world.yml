@@ -1,34 +1,44 @@
 ---
-- name: Discover AWX Path via Running Processes
+- name: Ultimate Discovery and Analytics Collection
   hosts: localhost
+  connection: local
   become: true
   tasks:
-    - name: Get path from running awx/automation-controller processes
-      shell: |
-        ps -ef | grep -E 'awx|automation-controller' | grep -v grep | awk '{print $8}' | grep 'python' | head -n 1
-      register: process_path
-      failed_when: process_path.stdout == ""
-
-    - name: Derive management binary path
+    - name: Try to find the binary via system path search
       set_fact:
-        # This takes the python path and looks for the manage command in the same bin folder
-        mgmt_bin: "{{ process_path.stdout | dirname }}/awx-manage"
-      
-    - name: Verify if derived binary exists
-      stat:
-        path: "{{ mgmt_bin }}"
-      register: bin_check
+        mgmt_bin: "{{ lookup('pipe', 'ls /usr/bin/awx-manage /usr/bin/automation-controller-manage /opt/rh/automation-controller/bin/automation-controller-manage 2>/dev/null | head -n 1') }}"
 
-    - name: Try alternative name (Automation Controller)
+    - name: Check if the 'awx' or 'automation-controller' package is installed via RPM
+      shell: "rpm -ql automation-controller || rpm -ql awx"
+      register: rpm_output
+      ignore_errors: true
+      when: mgmt_bin == ""
+
+    - name: Extract path from RPM output
       set_fact:
-        mgmt_bin: "{{ process_path.stdout | dirname }}/automation-controller-manage"
-      when: not bin_check.stat.exists
+        mgmt_bin: "{{ rpm_output.stdout_lines | select('search', 'manage$') | first }}"
+      when: mgmt_bin == "" and rpm_output.rc == 0
+
+    - name: Final attempt - Use environment PATH
+      shell: "command -v awx-manage || command -v automation-controller-manage"
+      register: command_v_output
+      ignore_errors: true
+      when: mgmt_bin == ""
+
+    - name: Set final path
+      set_fact:
+        mgmt_bin: "{{ command_v_output.stdout if mgmt_bin == '' else mgmt_bin }}"
+
+    - name: Fail if still not found
+      fail:
+        msg: "Could not find management binary. Environment may not be AWX/Tower/Controller."
+      when: mgmt_bin == ""
 
     - name: Run analytics collection
       shell: "{{ mgmt_bin }} gather_analytics --ship"
       become_user: awx
-      register: analytics_output
+      register: final_output
 
-    - name: Report
+    - name: Results
       debug:
-        var: analytics_output.stdout_lines
+        var: final_output.stdout_lines
