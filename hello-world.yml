@@ -1,6 +1,6 @@
 ---
 - name: Trigger AWX Analytics Collection
-  hosts: control_plane
+  hosts: localhost
   become: true
   vars:
     # Change this to 'docker' or 'podman' if not using Kubernetes
