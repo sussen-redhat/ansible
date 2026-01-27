@@ -1,31 +1,23 @@
 ---
-- name: Dynamic AWX/AAP Analytics Collection
+- name: Force Locate and Run Analytics
   hosts: localhost
   become: true
   tasks:
-    - name: Locate the management binary
+    - name: Search filesystem for the management binary
       shell: |
-        which automation-controller-manage || \
-        which awx-manage || \
-        ls /usr/bin/automation-controller-manage || \
-        ls /usr/bin/awx-manage || \
-        ls /var/lib/awx/venv/awx/bin/awx-manage
-      register: mgmt_path_raw
-      failed_when: mgmt_path_raw.rc != 0
-      changed_when: false
+        find /usr /opt /var -name "awx-manage" -executable -o -name "automation-controller-manage" -executable 2>/dev/null | head -n 1
+      register: found_path
+      failed_when: found_path.stdout == ""
 
-    - name: Set management path variable
+    - name: Set management path
       set_fact:
-        mgmt_bin: "{{ mgmt_path_raw.stdout_lines[0] }}"
+        mgmt_bin: "{{ found_path.stdout.trim() }}"
 
-    - name: Run analytics collection as 'awx' user
+    - name: Run analytics collection
       shell: "{{ mgmt_bin }} gather_analytics --ship"
       become_user: awx
       register: analytics_output
-      changed_when: "'Committed' in analytics_output.stdout"
 
-    - name: Report Results
+    - name: Show success
       debug:
-        msg: 
-          - "Binary used: {{ mgmt_bin }}"
-          - "Output: {{ analytics_output.stdout }}"
+        msg: "Successfully ran {{ mgmt_bin }}"
