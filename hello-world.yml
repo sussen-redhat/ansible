@@ -1,44 +1,28 @@
 ---
-- name: Ultimate Discovery and Analytics Collection
+- name: Locate AWX via Python Internals
   hosts: localhost
   connection: local
   become: true
   tasks:
-    - name: Try to find the binary via system path search
-      set_fact:
-        mgmt_bin: "{{ lookup('pipe', 'ls /usr/bin/awx-manage /usr/bin/automation-controller-manage /opt/rh/automation-controller/bin/automation-controller-manage 2>/dev/null | head -n 1') }}"
-
-    - name: Check if the 'awx' or 'automation-controller' package is installed via RPM
-      shell: "rpm -ql automation-controller || rpm -ql awx"
-      register: rpm_output
+    - name: Ask Python where the AWX package is located
+      shell: |
+        python3 -c "import awx; import os; print(os.path.dirname(awx.__file__))"
+      register: awx_lib_path
       ignore_errors: true
-      when: mgmt_bin == ""
 
-    - name: Extract path from RPM output
-      set_fact:
-        mgmt_bin: "{{ rpm_output.stdout_lines | select('search', 'manage$') | first }}"
-      when: mgmt_bin == "" and rpm_output.rc == 0
+    - name: Find the manage.py script relative to the library
+      shell: |
+        find {{ awx_lib_path.stdout | default('/usr') }} -name "manage.py" | head -n 1
+      register: manage_py_path
+      when: awx_lib_path.rc == 0
 
-    - name: Final attempt - Use environment PATH
-      shell: "command -v awx-manage || command -v automation-controller-manage"
-      register: command_v_output
-      ignore_errors: true
-      when: mgmt_bin == ""
-
-    - name: Set final path
-      set_fact:
-        mgmt_bin: "{{ command_v_output.stdout if mgmt_bin == '' else mgmt_bin }}"
-
-    - name: Fail if still not found
-      fail:
-        msg: "Could not find management binary. Environment may not be AWX/Tower/Controller."
-      when: mgmt_bin == ""
-
-    - name: Run analytics collection
-      shell: "{{ mgmt_bin }} gather_analytics --ship"
+    - name: Run analytics using the discovered manage.py
+      shell: "python3 {{ manage_py_path.stdout }} gather_analytics --ship"
       become_user: awx
-      register: final_output
+      when: manage_py_path.stdout is defined and manage_py_path.stdout != ""
+      register: manual_run
 
-    - name: Results
+    - name: Success check
       debug:
-        var: final_output.stdout_lines
+        msg: "Found and executed: {{ manage_py_path.stdout }}"
+      when: manual_run is not skipped
