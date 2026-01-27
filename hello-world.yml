@@ -1,30 +1,31 @@
 ---
-- name: Trigger AWX Analytics Collection on Host
+- name: Dynamic AWX/AAP Analytics Collection
   hosts: localhost
   become: true
-  vars:
-    # Common path for RPM-based installations
-    awx_venv_path: "/var/lib/awx/venv/awx"
-
   tasks:
-    - name: Ensure awx-manage exists at the expected path
-      stat:
-        path: "{{ awx_venv_path }}/bin/awx-manage"
-      register: awx_binary
-
-    - name: Run gather_analytics via host virtualenv
+    - name: Locate the management binary
       shell: |
-        source {{ awx_venv_path }}/bin/activate
-        awx-manage gather_analytics --ship
+        which automation-controller-manage || \
+        which awx-manage || \
+        ls /usr/bin/automation-controller-manage || \
+        ls /usr/bin/awx-manage || \
+        ls /var/lib/awx/venv/awx/bin/awx-manage
+      register: mgmt_path_raw
+      failed_when: mgmt_path_raw.rc != 0
+      changed_when: false
+
+    - name: Set management path variable
+      set_fact:
+        mgmt_bin: "{{ mgmt_path_raw.stdout_lines[0] }}"
+
+    - name: Run analytics collection as 'awx' user
+      shell: "{{ mgmt_bin }} gather_analytics --ship"
       become_user: awx
-      when: awx_binary.stat.exists
       register: analytics_output
+      changed_when: "'Committed' in analytics_output.stdout"
 
-    - name: Fail if awx-manage not found
-      fail:
-        msg: "awx-manage not found at {{ awx_venv_path }}. Please verify your installation path."
-      when: not awx_binary.stat.exists
-
-    - name: Display execution results
+    - name: Report Results
       debug:
-        msg: "{{ analytics_output.stdout_lines }}"
+        msg: 
+          - "Binary used: {{ mgmt_bin }}"
+          - "Output: {{ analytics_output.stdout }}"
