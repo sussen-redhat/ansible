@@ -1,28 +1,19 @@
 ---
-- name: Locate AWX via Python Internals
+- name: Execute Internal Analytics Gathering
   hosts: localhost
   connection: local
-  become: true
+  gather_facts: false
+  
   tasks:
-    - name: Ask Python where the AWX package is located
-      shell: |
-        python3 -c "import awx; import os; print(os.path.dirname(awx.__file__))"
-      register: awx_lib_path
-      ignore_errors: true
+    - name: Trigger analytics collection and shipment
+      ansible.builtin.command:
+        cmd: awx-manage gather_analytics --ship
+      register: analytics_result
+      # Use changed_when to avoid 'always yellow' status if you prefer
+      changed_when: "'Committed' in analytics_result.stdout"
 
-    - name: Find the manage.py script relative to the library
-      shell: |
-        find {{ awx_lib_path.stdout | default('/usr') }} -name "manage.py" | head -n 1
-      register: manage_py_path
-      when: awx_lib_path.rc == 0
-
-    - name: Run analytics using the discovered manage.py
-      shell: "python3 {{ manage_py_path.stdout }} gather_analytics --ship"
-      become_user: awx
-      when: manage_py_path.stdout is defined and manage_py_path.stdout != ""
-      register: manual_run
-
-    - name: Success check
-      debug:
-        msg: "Found and executed: {{ manage_py_path.stdout }}"
-      when: manual_run is not skipped
+    - name: Report Status
+      ansible.builtin.debug:
+        msg: 
+          - "Analytics Task Output:"
+          - "{{ analytics_result.stdout }}"
