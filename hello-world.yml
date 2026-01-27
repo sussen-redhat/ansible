@@ -1,11 +1,23 @@
 ---
-- name: Gather and Ship AWX Analytics
-  hosts: localhost
-  connection: local
-  gather_facts: false
-  tasks:
-    - name: Run awx-manage command
-      ansible.builtin.command:
-        cmd: docker exec -u 0 -t awx awx-manage gather_analytics --ship
-      become: yes # May require privilege escalation if the default user lacks permissions
+- name: Trigger AWX Analytics Collection
+  hosts: control_plane
+  become: true
+  vars:
+    # Change this to 'docker' or 'podman' if not using Kubernetes
+    deployment_type: podman 
+    namespace: awx
 
+  tasks:
+    - name: Run gather_analytics inside the AWX task container
+      shell: |
+        {% if deployment_type == 'podman' %}
+        kubectl exec -n {{ namespace }} deployment/awx-task -c awx-task -- awx-manage gather_analytics --ship
+        {% else %}
+        {{ deployment_type }} exec awx_task awx-manage gather_analytics --ship
+        {% endif %}
+      register: analytics_output
+      changed_when: "'Committed' in analytics_output.stdout"
+
+    - name: Display execution results
+      debug:
+        var: analytics_output.stdout_lines
