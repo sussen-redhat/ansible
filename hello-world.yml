@@ -6,6 +6,6 @@
   tasks:
     - name: Run awx-manage command
       ansible.builtin.command:
-        cmd: podman exec -u 0 -t awx awx-manage gather_analytics --ship
+        cmd: docker exec -u 0 -t awx awx-manage gather_analytics --ship
       become: yes # May require privilege escalation if the default user lacks permissions
 
