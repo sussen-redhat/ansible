@@ -1,23 +1,30 @@
 ---
-- name: Trigger AWX Analytics Collection
+- name: Trigger AWX Analytics Collection on Host
   hosts: localhost
   become: true
   vars:
-    # Change this to 'docker' or 'podman' if not using Kubernetes
-    deployment_type: podman 
-    namespace: awx
+    # Common path for RPM-based installations
+    awx_venv_path: "/var/lib/awx/venv/awx"
 
   tasks:
-    - name: Run gather_analytics inside the AWX task container
+    - name: Ensure awx-manage exists at the expected path
+      stat:
+        path: "{{ awx_venv_path }}/bin/awx-manage"
+      register: awx_binary
+
+    - name: Run gather_analytics via host virtualenv
       shell: |
-        {% if deployment_type == 'podman' %}
-        podman exec -n {{ namespace }} deployment/awx-task -c awx-task -- awx-manage gather_analytics --ship
-        {% else %}
-        {{ deployment_type }} exec awx_task awx-manage gather_analytics --ship
-        {% endif %}
+        source {{ awx_venv_path }}/bin/activate
+        awx-manage gather_analytics --ship
+      become_user: awx
+      when: awx_binary.stat.exists
       register: analytics_output
-      changed_when: "'Committed' in analytics_output.stdout"
+
+    - name: Fail if awx-manage not found
+      fail:
+        msg: "awx-manage not found at {{ awx_venv_path }}. Please verify your installation path."
+      when: not awx_binary.stat.exists
 
     - name: Display execution results
       debug:
-        var: analytics_output.stdout_lines
+        msg: "{{ analytics_output.stdout_lines }}"
