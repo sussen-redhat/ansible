@@ -10,8 +10,8 @@
         # We use the full path to avoid 'command not found'
         cmd: /usr/bin/awx-manage gather_analytics --ship
       delegate_to: 192.168.64.68
-      register: analytics_result
+      register: /tmp/analytics_result
 
     - name: Report Status
       ansible.builtin.debug:
-        var: analytics_result.stdout_lines
+        var: /tmp/analytics_result.stdout_lines
