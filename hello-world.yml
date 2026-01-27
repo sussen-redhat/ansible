@@ -1,19 +1,16 @@
 ---
 - name: Execute Internal Analytics Gathering
-  hosts: localhost
-  connection: local
+  hosts: localhost  # Point this to your actual controller host in your inventory
+  become: true             # awx-manage usually requires root/awx user perms
   gather_facts: false
   
   tasks:
-    - name: Trigger analytics collection and shipment
-      ansible.builtin.command:
-        cmd: awx-manage gather_analytics --ship
+    - name: Trigger analytics collection
+      ansible.builtin.shell:
+        # We use the full path to avoid 'command not found'
+        cmd: /usr/bin/awx-manage gather_analytics --ship
       register: analytics_result
-      # Use changed_when to avoid 'always yellow' status if you prefer
-      changed_when: "'Committed' in analytics_result.stdout"
 
     - name: Report Status
       ansible.builtin.debug:
-        msg: 
-          - "Analytics Task Output:"
-          - "{{ analytics_result.stdout }}"
+        var: analytics_result.stdout_lines
