@@ -5,4 +5,4 @@
     - name: set facts
       ansible.builtin.lineinfile:
         line: '"aap_version": "2.5.0"'
-        file: /etc/ansible/facts.d/custom.fact
+        path: /etc/ansible/facts.d/custom.fact
