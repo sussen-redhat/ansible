@@ -4,4 +4,4 @@
   tasks:
     - name: set facts
       ansible.builtin.set_fact:
-        owner: sussen
+        ansible_aap_version: 2.6.0
