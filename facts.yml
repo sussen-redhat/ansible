@@ -1,0 +1,7 @@
+- name: Set facts
+  hosts: 192.168.64.105
+  gather_facts: false
+  tasks:
+    - name: set facts
+      ansible.builtin.set_fact:
+        owner: sussen
