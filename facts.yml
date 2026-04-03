@@ -1,6 +1,9 @@
 - name: Set facts
   hosts: 192.168.64.105
   gather_facts: true
+  order: "{{ pb_order | d('sorted') }}"
+  strategy: "{{ pb_strategy | d('linear') }}"
+  serial: "{{ pb_serial | d(omit) }}"
   tasks:
     - name: Create the custom.fact file with JSON content
       copy:
