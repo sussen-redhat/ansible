@@ -1,5 +1,5 @@
 - name: Set facts
-  hosts: 192.168.64.105
+  hosts: all
   gather_facts: true
   order: "{{ pb_order | d('sorted') }}"
   strategy: "{{ pb_strategy | d('linear') }}"
