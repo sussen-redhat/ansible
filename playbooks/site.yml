@@ -1,7 +1,7 @@
 ---
 - name: Execute Internal Analytics Gathering
   hosts: all  # Point this to your actual controller host in your inventory
-  become: awx             # awx-manage usually requires root/awx user perms
+  become_user: awx             # awx-manage usually requires root/awx user perms
   gather_facts: false
   
   tasks:
