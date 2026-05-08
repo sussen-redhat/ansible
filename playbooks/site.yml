@@ -1,14 +1,18 @@
 ---
-- name: Main playbook
-  hosts: all
-  gather_facts: yes
-
+---
+- name: Execute Internal Analytics Gathering
+  hosts: all  # Point this to your actual controller host in your inventory
+  become: true             # awx-manage usually requires root/awx user perms
+  gather_facts: false
+  
   tasks:
+    - name: Trigger analytics collection
+      ansible.builtin.shell:
+        # We use the full path to avoid 'command not found'
+        cmd: /usr/bin/awx-manage gather_analytics --ship
+      delegate_to: '192.168.64.68'
+      register: analytics_result
 
-    - name: Include common role
-      include_role:
-        name: common
-
-    - name: Include application deploy role
-      include_role:
-        name: app_deploy
+    - name: Report Status
+      ansible.builtin.debug:
+        var: analytics_result.stdout_lines
